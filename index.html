@@ -197,12 +197,16 @@ nav{
   letter-spacing:inherit;
 }
 .hero-title::before{color:var(--red);left:-3px}
-.hero-title::after{color:rgba(100,50,50,0.4);left:3px}
+.hero-title::after{color:rgba(255,255,255,0.85);left:3px}
 
 .hero-title:hover::before,
 .hero-title:hover::after{
   opacity:1;
-  animation:title-glitch 0.2s steps(1) infinite;
+  animation:title-glitch 0.18s steps(1) infinite;
+}
+
+.hero-title:hover::after{
+  animation:title-glitch-white 0.22s steps(1) infinite;
 }
 
 @keyframes title-glitch{
@@ -212,6 +216,15 @@ nav{
   60%{clip-path:inset(75% 0 8% 0)}
   80%{clip-path:inset(5% 0 88% 0)}
   100%{clip-path:inset(42% 0 45% 0)}
+}
+
+@keyframes title-glitch-white{
+  0%{clip-path:inset(68% 0 5% 0)}
+  20%{clip-path:inset(20% 0 72% 0)}
+  40%{clip-path:inset(85% 0 3% 0)}
+  60%{clip-path:inset(40% 0 48% 0)}
+  80%{clip-path:inset(8% 0 82% 0)}
+  100%{clip-path:inset(55% 0 28% 0)}
 }
 
 /* COUNTDOWN */
@@ -475,7 +488,7 @@ nav{
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap:8px;
+  gap:6px;
   opacity:0;
   transition:opacity 0.25s;
   background:rgba(240,232,224,0.75);
@@ -490,29 +503,18 @@ nav{
   color:var(--muted);
   text-transform:lowercase;
   user-select:none;
-  transition:color 0.2s;
 }
-.piece:hover .piece-lbl{color:var(--text)}
 
 .piece-num-overlay{
   font-family:'Bebas Neue',sans-serif;
-  font-size:40px;
+  font-size:44px;
   color:var(--text);
   letter-spacing:0.05em;
   user-select:none;
   transition:color 0.2s;
+  line-height:1;
 }
 .piece:hover .piece-num-overlay{color:var(--red)}
-
-.piece-cta{
-  font-size:7px;
-  letter-spacing:0.5em;
-  color:var(--faint);
-  text-transform:lowercase;
-  user-select:none;
-  transition:color 0.2s;
-}
-.piece:hover .piece-cta{color:var(--red)}
 
 /* FOOTER */
 footer{
@@ -626,7 +628,7 @@ footer{
 </div>
 
 <script>
-// ASH PARTICLE SYSTEM
+// ASH PARTICLE SYSTEM — realistic, viewport-fixed
 const canvas = document.getElementById('bg');
 const ctx = canvas.getContext('2d');
 let W, H, ash = [];
@@ -636,36 +638,75 @@ function resize() {
   H = canvas.height = window.innerHeight;
 }
 
+// Each ash flake has realistic tumbling, drift, and variable weight
 function Ash() { this.reset(true); }
 
 Ash.prototype.reset = function(init) {
-  this.x = Math.random() * W;
-  this.y = init ? Math.random() * H : -16;
-  this.w = 2 + Math.random() * 5;
-  this.h = 1 + Math.random() * 2.5;
-  this.vy = 0.4 + Math.random() * 1.1;
-  this.vx = (Math.random() - 0.5) * 0.6;
-  this.angle = Math.random() * Math.PI;
-  this.spin = (Math.random() - 0.5) * 0.03;
-  this.wobble = Math.random() * Math.PI * 2;
-  this.wobbleSpeed = 0.008 + Math.random() * 0.018;
-  this.op = 0.12 + Math.random() * 0.32;
-  const r = Math.random();
-  if (r > 0.85) {
-    this.r = 90; this.g = 50; this.b = 45; // dark red-brown
-  } else if (r > 0.55) {
-    this.r = 85; this.g = 72; this.b = 68; // warm dark grey
+  this.x = Math.random() * (W + 60) - 30;
+  this.y = init ? Math.random() * H : -20;
+
+  // size — most tiny like real ash, occasionally a larger flake
+  const sizeRoll = Math.random();
+  if (sizeRoll > 0.93) {
+    this.w = 4 + Math.random() * 4;
+    this.h = 0.8 + Math.random() * 1.5;
+  } else if (sizeRoll > 0.7) {
+    this.w = 2 + Math.random() * 2.5;
+    this.h = 0.5 + Math.random() * 1;
   } else {
-    this.r = 105; this.g = 92; this.b = 86; // warm medium grey
+    this.w = 0.8 + Math.random() * 1.8;
+    this.h = 0.4 + Math.random() * 0.8;
+  }
+
+  // heavier flakes fall faster, lighter ones drift
+  const weight = this.w / 8;
+  this.vy = 0.18 + weight * 1.4 + Math.random() * 0.5;
+  this.vx = (Math.random() - 0.5) * 0.3;
+
+  // tumbling rotation
+  this.angle = Math.random() * Math.PI;
+  this.spin = (Math.random() - 0.5) * 0.025;
+
+  // air current wobble — each flake has its own frequency
+  this.wx = Math.random() * Math.PI * 2;
+  this.wy = Math.random() * Math.PI * 2;
+  this.wxs = 0.006 + Math.random() * 0.014;
+  this.wys = 0.004 + Math.random() * 0.01;
+  this.wxa = 0.2 + Math.random() * 0.5; // horizontal drift amplitude
+
+  // opacity — smaller flakes more transparent
+  this.op = 0.08 + (this.w / 8) * 0.45 + Math.random() * 0.12;
+  this.op = Math.min(this.op, 0.55);
+
+  // color — warm ash tones, occasional near-black and red-brown
+  const c = Math.random();
+  if (c > 0.92) {
+    this.fill = [60, 30, 28]; // near black red-brown
+  } else if (c > 0.78) {
+    this.fill = [95, 58, 52]; // dark warm brown
+  } else if (c > 0.55) {
+    this.fill = [88, 74, 70]; // warm charcoal
+  } else if (c > 0.3) {
+    this.fill = [108, 94, 88]; // medium warm grey
+  } else {
+    this.fill = [128, 114, 108]; // lighter ash
   }
 };
 
 Ash.prototype.step = function() {
-  this.wobble += this.wobbleSpeed;
-  this.x += this.vx + Math.sin(this.wobble) * 0.5;
-  this.y += this.vy;
+  this.wx += this.wxs;
+  this.wy += this.wys;
+  // horizontal air current — slight sinusoidal drift
+  this.x += this.vx + Math.sin(this.wx) * this.wxa;
+  // vertical — mostly down with tiny vertical oscillation for lightness
+  this.y += this.vy + Math.sin(this.wy) * 0.08;
+  // tumble
   this.angle += this.spin;
-  if (this.y > H + 20 || this.x < -30 || this.x > W + 30) this.reset(false);
+  // slow deceleration/acceleration variance
+  this.vy += (Math.random() - 0.502) * 0.008;
+  this.vy = Math.max(0.1, Math.min(this.vy, 2.2));
+
+  if (this.y > H + 24 || this.x < -40 || this.x > W + 40) this.reset(false);
 };
 
 Ash.prototype.paint = function() {
@@ -673,7 +714,7 @@ Ash.prototype.paint = function() {
   ctx.translate(this.x, this.y);
   ctx.rotate(this.angle);
   ctx.globalAlpha = this.op;
-  ctx.fillStyle = `rgb(${this.r},${this.g},${this.b})`;
+  ctx.fillStyle = `rgb(${this.fill[0]},${this.fill[1]},${this.fill[2]})`;
   ctx.beginPath();
   ctx.ellipse(0, 0, this.w, this.h, 0, 0, Math.PI * 2);
   ctx.fill();
@@ -682,10 +723,11 @@ Ash.prototype.paint = function() {
 
 function initAsh() {
   ash = [];
-  for (let i = 0; i < 350; i++) ash.push(new Ash());
+  for (let i = 0; i < 420; i++) ash.push(new Ash());
 }
 
 function loop() {
+  // ivory background every frame
   ctx.fillStyle = '#f0e8e0';
   ctx.fillRect(0, 0, W, H);
   ash.forEach(a => { a.step(); a.paint(); });
@@ -834,19 +876,16 @@ for (let n = 1; n <= 13; n++) {
     <div class="piece-overlay">
       <div class="piece-lbl" data-lbl>origins</div>
       <div class="piece-num-overlay">${num}</div>
-      <div class="piece-cta" data-cta>—</div>
     </div>
   `;
 
   piece.addEventListener('mouseenter', () => {
     piece.classList.add('glitching');
     scramble(piece.querySelector('[data-lbl]'), 'origins', 220);
-    setTimeout(() => scramble(piece.querySelector('[data-cta]'), ctaOpts[Math.floor(Math.random() * ctaOpts.length)], 200), 80);
   });
 
   piece.addEventListener('mouseleave', () => {
     piece.classList.remove('glitching');
-    piece.querySelector('[data-cta]').textContent = '—';
   });
 
   piece.addEventListener('click', () => {
