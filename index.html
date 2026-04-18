@@ -70,22 +70,22 @@ nav{
   position:sticky;
   top:0;
   z-index:100;
-  background:rgba(240,232,224,0.94);
-  backdrop-filter:blur(14px);
+  background:rgba(240,232,224,0.55);
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
 }
 
 .logo{
   font-family:'Bebas Neue',sans-serif;
   font-size:22px;
-  letter-spacing:0.25em;
+  letter-spacing:0.3em;
   color:var(--text);
   cursor:pointer;
   user-select:none;
-  transition:color 0.2s;
-  animation:logo-flicker 11s infinite;
   text-decoration:none;
+  animation:logo-flicker 11s infinite;
 }
-.logo:hover{color:var(--red)}
+.logo:hover{ color:var(--text); }
 
 @keyframes logo-flicker{
   0%,91%,93%,96%,100%{opacity:1}
@@ -594,6 +594,12 @@ footer{
   text-transform:lowercase;
 }
 
+/* REDACTION spans */
+.rc{
+  display:inline;
+  transition:color 0.06s;
+}
+
 /* RESPONSIVE */
 @media(max-width:768px){
   nav{padding:18px 24px}
@@ -745,26 +751,34 @@ Dust.prototype.paint = function() {
   ctx.fillRect(this.x, this.y, this.sz, this.sz);
 };
 
-// ── LAYER 3: Slow falling visible speck ──
+// ── LAYER 3: Falling ash specks — top to bottom ──
 function Speck() { this.reset(true); }
 Speck.prototype.reset = function(init) {
-  this.x  = Math.random() * W;
-  this.y  = init ? Math.random() * H : -(5 + Math.random() * 40);
-  this.vy = 0.08 + Math.random() * 0.22; // very slow fall
-  this.wt = Math.random() * Math.PI * 2;
-  this.wts = 0.004 + Math.random() * 0.007;
-  this.wta = 0.12 + Math.random() * 0.25; // gentle horizontal drift
-  this.sz = 1.5 + Math.random() * 2;
-  this.op = 0.38 + Math.random() * 0.38;
-  const v = 28 + Math.floor(Math.random() * 40);
-  this.r = v; this.g = v - 8; this.b = v - 12;
+  this.x   = (Math.random() * (W + 60)) - 30;
+  this.y   = init ? Math.random() * H : -(5 + Math.random() * 30);
+  this.vy  = 0.25 + Math.random() * 0.9;   // noticeable fall speed
+  this.vx  = (Math.random() - 0.5) * 0.3;
+  this.wt  = Math.random() * Math.PI * 2;
+  this.wts = 0.005 + Math.random() * 0.01;
+  this.wta = 0.08 + Math.random() * 0.22;
+  this.sz  = Math.random() > 0.85 ? 2 : 1;
+  this.ember = Math.random() > 0.87; // ~13% ember orange-red
+  if (this.ember) {
+    this.op = 0.45 + Math.random() * 0.35;
+    this.r = 175 + Math.floor(Math.random() * 40);
+    this.g = 50  + Math.floor(Math.random() * 30);
+    this.b = 10  + Math.floor(Math.random() * 20);
+  } else {
+    this.op = 0.35 + Math.random() * 0.40;
+    const v = 22 + Math.floor(Math.random() * 55);
+    this.r = v; this.g = v - 5; this.b = v - 9;
+  }
 };
 Speck.prototype.step = function() {
   this.wt += this.wts;
-  this.x  += Math.sin(this.wt) * this.wta;
+  this.x  += this.vx + Math.sin(this.wt) * this.wta;
   this.y  += this.vy;
-  if (this.y > H + 10) this.reset(false);
-  if (this.x < -10 || this.x > W + 10) this.reset(false);
+  if (this.y > H + 15 || this.x < -40 || this.x > W + 40) this.reset(false);
 };
 Speck.prototype.paint = function() {
   ctx.globalAlpha = this.op;
@@ -774,33 +788,29 @@ Speck.prototype.paint = function() {
 
 function initParticles() {
   dustPts    = Array.from({ length: 550 }, () => new Dust());
-  slowFlakes = Array.from({ length: 18 },  () => new Speck());
+  slowFlakes = Array.from({ length: 160 }, () => new Speck());
 }
 
 // ── LAYER 1: Film grain (drawn in batches by color) ──
 function drawGrain() {
-  const n = Math.floor(W * H * 0.014); // ~1.4% pixel coverage — visible on light bg
-  const nEmber = Math.floor(n * 0.06);
-  const nDark  = Math.floor(n * 0.40);
+  const n = Math.floor(W * H * 0.014);
+  const nEmber = Math.floor(n * 0.08);  // bumped up ember %
+  const nDark  = Math.floor(n * 0.38);
   const nMid   = Math.floor(n * 0.34);
   const nLight = n - nEmber - nDark - nMid;
 
-  // ember grain — orange-red
   ctx.fillStyle = 'rgba(185,55,18,0.72)';
   for (let i = 0; i < nEmber; i++)
     ctx.fillRect(Math.random() * W | 0, Math.random() * H | 0, 1, 1);
 
-  // near-black grain
   ctx.fillStyle = 'rgba(22,12,10,0.65)';
   for (let i = 0; i < nDark; i++)
     ctx.fillRect(Math.random() * W | 0, Math.random() * H | 0, 1, 1);
 
-  // mid warm grey
   ctx.fillStyle = 'rgba(68,50,44,0.52)';
   for (let i = 0; i < nMid; i++)
     ctx.fillRect(Math.random() * W | 0, Math.random() * H | 0, 1, 1);
 
-  // lighter ash grey
   ctx.fillStyle = 'rgba(98,80,74,0.38)';
   for (let i = 0; i < nLight; i++)
     ctx.fillRect(Math.random() * W | 0, Math.random() * H | 0, 1, 1);
@@ -842,11 +852,6 @@ function scramble(el, final, ms) {
   }, ms / final.length);
 }
 
-// LOGO
-document.querySelector('.logo').addEventListener('mouseenter', function() {
-  scramble(this, '-PROPHET-', 400);
-});
-
 // TAGLINE — the 13 one-liners
 const lines = [
   'it was always coming.',
@@ -881,10 +886,39 @@ fL.addEventListener('click', () => {
   scramble(fL, fLines[fIdx], 350);
 });
 
-// COL TITLE
-document.getElementById('col-title').addEventListener('mouseenter', function() {
-  scramble(this, 'ORIGINS', 300);
-});
+// REDACTION — for logo and ORIGINS title
+function setupRedaction(el, text) {
+  // wrap each character in a span
+  el.innerHTML = text.split('').map(c =>
+    `<span class="rc" data-c="${c}">${c}</span>`
+  ).join('');
+
+  let timers = [];
+  function clearT() { timers.forEach(clearTimeout); timers = []; }
+
+  el.addEventListener('mouseenter', () => {
+    clearT();
+    el.querySelectorAll('.rc').forEach((s, i) => {
+      timers.push(setTimeout(() => {
+        s.style.color = '#8b0000';
+        s.textContent = '█';
+      }, i * 48));
+    });
+  });
+
+  el.addEventListener('mouseleave', () => {
+    clearT();
+    [...el.querySelectorAll('.rc')].reverse().forEach((s, i) => {
+      timers.push(setTimeout(() => {
+        s.style.color = '';
+        s.textContent = s.dataset.c;
+      }, i * 42));
+    });
+  });
+}
+
+setupRedaction(document.querySelector('.logo'), '-PROPHET-');
+setupRedaction(document.getElementById('col-title'), 'ORIGINS');
 
 // COUNTDOWN LABELS
 const altL = ['rotations', 'signals', 'heartbeats', 'ticks'];
