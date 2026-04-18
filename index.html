@@ -600,7 +600,6 @@ footer{
   display:inline;
   background:#1c0606;
   color:transparent !important;
-  /* box-shadow fills the letter-spacing gaps to create one continuous bar */
   box-shadow:6px 0 0 5px #1c0606, -6px 0 0 5px #1c0606;
   border-radius:1px;
   position:relative;
@@ -608,14 +607,22 @@ footer{
   cursor:default;
 }
 .rc.shown{
-  background:transparent;
+  background:transparent !important;
   color:inherit !important;
-  box-shadow:none;
+  box-shadow:none !important;
 }
 /* larger spacing for the ORIGINS title */
 .col-title .rc{
   box-shadow:9px 0 0 8px #1c0606, -9px 0 0 8px #1c0606;
 }
+.col-title .rc.shown{
+  color:var(--text) !important;
+  background:transparent !important;
+  box-shadow:none !important;
+}
+
+/* OpenSea sailboat inner (shows page background through the circle) */
+.os-boat{ fill:#f0e8e0; }
 
 /* RESPONSIVE */
 @media(max-width:768px){
@@ -653,17 +660,18 @@ footer{
 <div class="site">
 
   <nav>
-    <a class="logo" href="#">-PROPHET-</a>
+    <a class="logo" href="#"><span class="rc" data-c="-">-</span><span class="rc" data-c="P">P</span><span class="rc" data-c="R">R</span><span class="rc" data-c="O">O</span><span class="rc" data-c="P">P</span><span class="rc" data-c="H">H</span><span class="rc" data-c="E">E</span><span class="rc" data-c="T">T</span><span class="rc" data-c="-">-</span></a>
     <ul class="nav-symbols">
-      <li><a class="nav-sym" href="#grid">∎<span class="sym-tip">origins</span></a></li>
-      <li><a class="nav-sym" id="garden-btn" href="#">✤<span class="sym-tip">garden</span></a></li>
+      <li><a class="nav-sym" href="#grid">⌬<span class="sym-tip">origins</span></a></li>
+      <li><a class="nav-sym" id="garden-btn" href="#">✿<span class="sym-tip">garden</span></a></li>
       <li><a class="nav-mint" href="https://www.transient.xyz/mint/-prophet-origins" target="_blank" rel="noopener">collect →</a></li>
       <li><a class="nav-x" href="https://x.com/ProphetART92" target="_blank" rel="noopener">𝕏</a></li>
       <li><a class="nav-x nav-os" href="https://opensea.io/collection/-origins-" target="_blank" rel="noopener" title="opensea">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <path d="M7 13.5c1.5-2 3-2 5 0s3.5 2 5 0"/>
-          <path d="M7 10c1.5-2 3-2 5 0s3.5 2 5 0"/>
+        <svg width="17" height="17" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="50" r="48" fill="currentColor"/>
+          <path class="os-boat" d="M28,74 L28,14 L60,74Z"/>
+          <path class="os-boat" d="M63,69 L63,32 L82,60Z"/>
+          <path class="os-boat" d="M15,76 L85,76 L81,84 L19,84Z"/>
         </svg>
       </a></li>
     </ul>
@@ -703,7 +711,7 @@ footer{
 
   <div class="col-section">
     <div class="col-header">
-      <div class="col-title" id="col-title">ORIGINS</div>
+      <div class="col-title" id="col-title"><span class="rc" data-c="O">O</span><span class="rc" data-c="R">R</span><span class="rc" data-c="I">I</span><span class="rc" data-c="G">G</span><span class="rc" data-c="I">I</span><span class="rc" data-c="N">N</span><span class="rc" data-c="S">S</span></div>
       <div class="col-signal" id="col-signal">· · ·</div>
     </div>
     <div class="grid" id="grid"></div>
@@ -910,17 +918,11 @@ fL.addEventListener('click', () => {
   scramble(fL, fLines[fIdx], 350);
 });
 
-// REDACTION — starts hidden, reveals on hover, re-redacts on leave
-function setupRedaction(el, text) {
-  el.innerHTML = text.split('').map(c =>
-    `<span class="rc" data-c="${c}">${c}</span>`
-  ).join('');
-  // starts fully redacted (no .shown class by default)
-
+// REDACTION — spans pre-rendered in HTML, just wire up the events
+function setupRedaction(el) {
   let timers = [];
   function clearT() { timers.forEach(clearTimeout); timers = []; }
 
-  // hover: reveal (unredact) left to right
   el.addEventListener('mouseenter', () => {
     clearT();
     el.querySelectorAll('.rc').forEach((s, i) => {
@@ -928,7 +930,6 @@ function setupRedaction(el, text) {
     });
   });
 
-  // leave: re-redact right to left (bar sweeps back over)
   el.addEventListener('mouseleave', () => {
     clearT();
     [...el.querySelectorAll('.rc')].reverse().forEach((s, i) => {
@@ -937,8 +938,8 @@ function setupRedaction(el, text) {
   });
 }
 
-setupRedaction(document.querySelector('.logo'), '-PROPHET-');
-setupRedaction(document.getElementById('col-title'), 'ORIGINS');
+setupRedaction(document.querySelector('.logo'));
+setupRedaction(document.getElementById('col-title'));
 
 // COUNTDOWN LABELS
 const altL = ['rotations', 'signals', 'heartbeats', 'ticks'];
