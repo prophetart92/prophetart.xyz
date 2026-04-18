@@ -120,7 +120,7 @@ nav{
   bottom:-24px;
   left:50%;
   transform:translateX(-50%);
-  font-size:7px;
+  font-size:10px;
   letter-spacing:0.3em;
   color:var(--red);
   white-space:nowrap;
@@ -133,8 +133,8 @@ nav{
 .nav-sym:hover .sym-tip{opacity:1}
 
 .nav-mint{
-  font-size:8px;
-  letter-spacing:0.4em;
+  font-size:11px;
+  letter-spacing:0.35em;
   color:var(--muted);
   text-decoration:none;
   border:0.5px solid var(--faint);
@@ -149,9 +149,21 @@ nav{
   border-color:var(--red);
   background:var(--red-glow);
   transform:scale(1.08);
-  letter-spacing:0.6em;
+  letter-spacing:0.55em;
   padding:7px 18px;
 }
+
+.nav-x{
+  font-size:15px;
+  font-weight:700;
+  color:var(--muted);
+  text-decoration:none;
+  transition:color 0.2s,transform 0.2s;
+  display:inline-block;
+  font-family:'Share Tech Mono',monospace;
+  letter-spacing:0;
+}
+.nav-x:hover{color:var(--red);transform:scale(1.15)}
 
 /* HERO */
 .hero{
@@ -184,6 +196,9 @@ nav{
   position:relative;
   cursor:default;
   user-select:none;
+  width:fit-content;
+  margin-left:auto;
+  margin-right:auto;
 }
 
 .hero-title::before,
@@ -196,8 +211,8 @@ nav{
   font-size:inherit;
   letter-spacing:inherit;
 }
-.hero-title::before{color:var(--red);left:-3px}
-.hero-title::after{color:rgba(255,255,255,0.85);left:3px}
+.hero-title::before{color:var(--red);left:-2px}
+.hero-title::after{color:rgba(255,255,255,0.85);left:2px}
 
 .hero-title:hover::before,
 .hero-title:hover::after{
@@ -260,7 +275,7 @@ nav{
 }
 
 .cd-lbl{
-  font-size:7px;
+  font-size:10px;
   letter-spacing:0.5em;
   color:var(--faint);
   text-transform:lowercase;
@@ -284,8 +299,8 @@ nav{
 }
 
 .tagline{
-  font-size:9px;
-  letter-spacing:0.6em;
+  font-size:12px;
+  letter-spacing:0.5em;
   color:var(--faint);
   cursor:pointer;
   user-select:none;
@@ -293,7 +308,7 @@ nav{
   margin-bottom:32px;
   text-transform:lowercase;
 }
-.tagline:hover{color:var(--text);letter-spacing:1em}
+.tagline:hover{color:var(--text);letter-spacing:0.9em}
 
 .hero-links{
   display:flex;
@@ -303,8 +318,8 @@ nav{
 
 .mint-hero{
   font-family:'Share Tech Mono',monospace;
-  font-size:9px;
-  letter-spacing:0.4em;
+  font-size:11px;
+  letter-spacing:0.35em;
   color:var(--red);
   text-decoration:none;
   border:0.5px solid var(--red);
@@ -325,10 +340,10 @@ nav{
   z-index:-1;
 }
 .mint-hero:hover::before{transform:translateX(0)}
-.mint-hero:hover{color:var(--bg);letter-spacing:0.6em}
+.mint-hero:hover{color:var(--bg);letter-spacing:0.55em}
 
 .x-hero{
-  font-size:9px;
+  font-size:11px;
   letter-spacing:0.4em;
   color:var(--faint);
   text-decoration:none;
@@ -366,7 +381,7 @@ nav{
 .col-title:hover{color:var(--muted)}
 
 .col-signal{
-  font-size:9px;
+  font-size:12px;
   letter-spacing:0.3em;
   color:var(--faint);
   user-select:none;
@@ -498,7 +513,7 @@ nav{
 .piece:hover .piece-overlay{opacity:1}
 
 .piece-lbl{
-  font-size:7px;
+  font-size:10px;
   letter-spacing:0.6em;
   color:var(--muted);
   text-transform:lowercase;
@@ -526,7 +541,7 @@ footer{
 }
 
 .footer-l{
-  font-size:8px;
+  font-size:11px;
   letter-spacing:0.5em;
   color:var(--faint);
   cursor:pointer;
@@ -537,7 +552,7 @@ footer{
 .footer-l:hover{color:var(--red);letter-spacing:0.9em}
 
 .footer-r{
-  font-size:8px;
+  font-size:11px;
   letter-spacing:0.4em;
   color:var(--faint);
   user-select:none;
@@ -630,6 +645,7 @@ footer{
       <li><a class="nav-sym" href="#grid">∎<span class="sym-tip">origins</span></a></li>
       <li><a class="nav-sym" id="garden-btn" href="#">❧<span class="sym-tip">garden</span></a></li>
       <li><a class="nav-mint" href="https://www.transient.xyz/mint/-prophet-origins" target="_blank" rel="noopener">collect →</a></li>
+      <li><a class="nav-x" href="https://x.com/ProphetART92" target="_blank" rel="noopener">𝕏</a></li>
     </ul>
   </nav>
 
@@ -959,12 +975,12 @@ setInterval(() => { mEl.textContent = mP[Math.floor(Math.random() * mP.length)];
 
 // RANDOM TITLE GLITCH
 setInterval(() => {
-  if (Math.random() > 0.85) {
+  if (Math.random() > 0.88) {
     const t = document.getElementById('hero-title');
-    t.style.transform = `skewX(${(Math.random() - 0.5) * 3}deg) translateX(${(Math.random() - 0.5) * 6}px)`;
-    setTimeout(() => { t.style.transform = ''; }, 80);
+    t.style.transform = `skewX(${(Math.random() - 0.5) * 1.5}deg) translateX(${(Math.random() - 0.5) * 3}px)`;
+    setTimeout(() => { t.style.transform = ''; }, 70);
   }
-}, 2200);
+}, 2800);
 
 // ART GRID
 const images = [
