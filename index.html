@@ -543,6 +543,52 @@ footer{
   user-select:none;
 }
 
+/* GARDEN MODAL */
+.garden-modal{
+  position:fixed;
+  inset:0;
+  z-index:999;
+  background:rgba(240,232,224,0.88);
+  backdrop-filter:blur(8px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 0.3s;
+}
+.garden-modal.open{
+  opacity:1;
+  pointer-events:all;
+}
+.garden-box{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:20px;
+  padding:48px 56px;
+  border:0.5px solid var(--border);
+  background:rgba(240,232,224,0.95);
+  text-align:center;
+}
+#flower-canvas{
+  image-rendering:pixelated;
+  width:80px;
+  height:80px;
+}
+.garden-msg{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:22px;
+  letter-spacing:0.3em;
+  color:var(--text);
+}
+.garden-sub{
+  font-size:8px;
+  letter-spacing:0.5em;
+  color:var(--faint);
+  text-transform:lowercase;
+}
+
 /* RESPONSIVE */
 @media(max-width:768px){
   nav{padding:18px 24px}
@@ -567,20 +613,27 @@ footer{
 
 <canvas id="bg"></canvas>
 
+<!-- GARDEN POPUP -->
+<div class="garden-modal" id="garden-modal">
+  <div class="garden-box">
+    <canvas id="flower-canvas" width="80" height="80"></canvas>
+    <div class="garden-msg" id="garden-msg">the garden is sealed.</div>
+    <div class="garden-sub">it is not yet time.</div>
+  </div>
+</div>
+
 <div class="site">
 
   <nav>
     <a class="logo" href="#">-PROPHET-</a>
     <ul class="nav-symbols">
       <li><a class="nav-sym" href="#grid">∎<span class="sym-tip">origins</span></a></li>
-      <li><a class="nav-sym" href="#grid">❧<span class="sym-tip">garden</span></a></li>
-      <li><a class="nav-sym" href="#grid">◯<span class="sym-tip">???</span></a></li>
+      <li><a class="nav-sym" id="garden-btn" href="#">❧<span class="sym-tip">garden</span></a></li>
       <li><a class="nav-mint" href="https://www.transient.xyz/mint/-prophet-origins" target="_blank" rel="noopener">collect →</a></li>
     </ul>
   </nav>
 
   <section class="hero">
-    <div class="hero-noise" id="hero-noise">· · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·</div>
     <h1 class="hero-title" id="hero-title">-PROPHET-</h1>
     <div class="countdown">
       <div class="cd-unit">
@@ -628,7 +681,7 @@ footer{
 </div>
 
 <script>
-// ASH PARTICLE SYSTEM — world-space realistic ash
+// ASH PARTICLE SYSTEM — world-space, spawn above screen, fall through bottom
 const canvas = document.getElementById('bg');
 const ctx = canvas.getContext('2d');
 let W, H, ash = [];
@@ -639,75 +692,91 @@ function resize() {
   H = canvas.height = window.innerHeight;
 }
 
-function Ash() { this.reset(true); }
+function Ash() { this.init(); }
 
-Ash.prototype.reset = function(init) {
-  this.x = (Math.random() * (W + 120)) - 60;
-  this.y = init ? Math.random() * H : -30;
+Ash.prototype.init = function() {
+  // ALL particles start from above the screen
+  this.x   = (Math.random() * (W + 160)) - 80;
+  this.y   = -(Math.random() * 300);          // spawn 0-300px above top edge
+  this.spawnedBelow = false;
 
-  const roll = Math.random();
-  if (roll > 0.97) { this.sz = 3.5 + Math.random() * 4; this.type = 2; }
-  else if (roll > 0.82) { this.sz = 1.4 + Math.random() * 2.4; this.type = 1; }
-  else { this.sz = 0.3 + Math.random() * 1.1; this.type = 0; }
+  // size class
+  const r = Math.random();
+  if      (r > 0.96) { this.sz = 3 + Math.random() * 3.5; this.cls = 'lg'; }
+  else if (r > 0.80) { this.sz = 1.2 + Math.random() * 2; this.cls = 'md'; }
+  else               { this.sz = 0.4 + Math.random() * 1;  this.cls = 'sm'; }
 
-  const inv = 1 / (this.sz * 0.7 + 0.4);
-  this.vy  = 0.06 + inv * 0.55 + Math.random() * 0.35;
-  this.vx  = (Math.random() - 0.5) * 0.35;
-  this.angle = Math.random() * Math.PI * 2;
-  this.spin  = (Math.random() - 0.5) * 0.018 * Math.max(0.3, inv);
+  // physics — lighter = slower fall, more drift
+  const lightness = 1 / (this.sz + 0.5);
+  this.vy = 0.08 + lightness * 0.5 + Math.random() * 0.3;
+  this.vx = (Math.random() - 0.5) * 0.3;
+
+  // rotation
+  this.ang  = Math.random() * Math.PI;
+  this.spin = (Math.random() - 0.5) * 0.02 * lightness;
+
+  // sinusoidal drift — unique per flake
   this.wt  = Math.random() * Math.PI * 2;
-  this.wts = 0.003 + Math.random() * 0.011;
-  this.wta = 0.12 + Math.random() * 0.5 * Math.max(0.4, inv);
+  this.wts = 0.003 + Math.random() * 0.01;
+  this.wta = 0.1 + Math.random() * 0.45 * lightness;
 
-  if (this.type === 0) this.baseOp = 0.05 + Math.random() * 0.15;
-  else if (this.type === 1) this.baseOp = 0.13 + Math.random() * 0.28;
-  else this.baseOp = 0.22 + Math.random() * 0.38;
-  this.op = this.baseOp;
+  // base opacity
+  if      (this.cls === 'sm') this.baseOp = 0.06 + Math.random() * 0.16;
+  else if (this.cls === 'md') this.baseOp = 0.14 + Math.random() * 0.26;
+  else                        this.baseOp = 0.20 + Math.random() * 0.35;
 
-  const c = Math.random();
-  if      (c > 0.95) this.rgb = [38, 18, 16];
-  else if (c > 0.85) this.rgb = [72, 44, 40];
-  else if (c > 0.68) this.rgb = [86, 68, 62];
-  else if (c > 0.42) this.rgb = [104, 88, 82];
-  else               this.rgb = [122, 108, 102];
+  // ash tone
+  const t = Math.random();
+  if      (t > 0.94) this.rgb = [40,  20, 18 ];
+  else if (t > 0.84) this.rgb = [70,  44, 40 ];
+  else if (t > 0.66) this.rgb = [88,  68, 62 ];
+  else if (t > 0.40) this.rgb = [106, 90, 84 ];
+  else               this.rgb = [124,110,104 ];
+};
 
-  if (this.type > 0) {
-    const n = 4 + Math.floor(Math.random() * 4);
-    this.pts = [];
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2 + (Math.random() - 0.5) * 1.1;
-      const r = this.sz * (0.38 + Math.random() * 0.62);
-      this.pts.push([Math.cos(a) * r, Math.sin(a) * r]);
-    }
-  }
+// respawn at top after passing bottom
+Ash.prototype.respawn = function() {
+  this.x   = (Math.random() * (W + 160)) - 80;
+  this.y   = -(10 + Math.random() * 60);
+  this.wt  = Math.random() * Math.PI * 2;
+  this.ang = Math.random() * Math.PI;
 };
 
 Ash.prototype.step = function() {
-  this.wt += this.wts;
-  this.x  += this.vx + Math.sin(this.wt) * this.wta;
-  this.y  += this.vy;
-  this.angle += this.spin;
-  this.op = this.baseOp * (0.65 + 0.35 * Math.abs(Math.sin(this.angle)));
-  if (this.y > H + 40 || this.x < -80 || this.x > W + 80) this.reset(false);
+  this.wt  += this.wts;
+  this.x   += this.vx + Math.sin(this.wt) * this.wta;
+  this.y   += this.vy;
+  this.ang += this.spin;
+  if (this.y > H + 30 || this.x < -100 || this.x > W + 100) this.respawn();
 };
 
 Ash.prototype.paint = function() {
+  // opacity breathes with rotation — light catches flake at different angles
+  const op = this.baseOp * (0.6 + 0.4 * Math.abs(Math.sin(this.ang)));
   ctx.save();
   ctx.translate(this.x, this.y);
-  ctx.rotate(this.angle);
-  ctx.globalAlpha = this.op;
+  ctx.rotate(this.ang);
+  ctx.globalAlpha = op;
   ctx.fillStyle = `rgb(${this.rgb[0]},${this.rgb[1]},${this.rgb[2]})`;
-  if (this.type === 0) {
-    ctx.fillRect(-this.sz * 0.5, -this.sz * 0.3, this.sz, this.sz * 0.6);
-  } else {
+
+  const s = this.sz;
+  if (this.cls === 'sm') {
+    // fine dust — tiny rect
+    ctx.fillRect(-s * 0.5, -s * 0.25, s, s * 0.5);
+  } else if (this.cls === 'md') {
+    // medium — small rounded rect, no complex paths
     ctx.beginPath();
-    ctx.moveTo(this.pts[0][0], this.pts[0][1]);
-    for (let i = 1; i < this.pts.length; i++) {
-      const prev = this.pts[i - 1];
-      const cur  = this.pts[i];
-      ctx.quadraticCurveTo(prev[0], prev[1], (prev[0] + cur[0]) / 2, (prev[1] + cur[1]) / 2);
-    }
-    ctx.closePath();
+    ctx.roundRect(-s, -s * 0.4, s * 2, s * 0.8, s * 0.3);
+    ctx.fill();
+  } else {
+    // large — slightly larger rounded blob
+    ctx.beginPath();
+    ctx.roundRect(-s * 0.9, -s * 0.45, s * 1.8, s * 0.9, s * 0.4);
+    ctx.fill();
+    // add a second slightly offset layer for torn look
+    ctx.globalAlpha = op * 0.5;
+    ctx.beginPath();
+    ctx.roundRect(-s * 0.6, -s * 0.6, s * 1.2, s * 0.55, s * 0.25);
     ctx.fill();
   }
   ctx.restore();
@@ -715,7 +784,13 @@ Ash.prototype.paint = function() {
 
 function initAsh() {
   ash = [];
-  for (let i = 0; i < 480; i++) ash.push(new Ash());
+  // first batch: spread across screen so it looks populated immediately
+  for (let i = 0; i < 700; i++) {
+    const a = new Ash();
+    // override y to distribute across full screen height for initial load
+    a.y = Math.random() * (H + 400) - 200;
+    ash.push(a);
+  }
 }
 
 function loop() {
@@ -725,13 +800,13 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-// scroll tracking — ash lives in world space not viewport space
+// SCROLL TRACKING — offset particles by scroll so ash is in world-space
 window.addEventListener('scroll', () => {
   const delta = window.scrollY - lastScrollY;
   ash.forEach(a => {
     a.y -= delta;
-    if (a.y < -60) { a.reset(false); a.y = -Math.random() * 40; }
-    if (a.y > H + 60) { a.reset(false); a.y = H + Math.random() * 30; }
+    if (a.y < -350) { a.respawn(); }
+    if (a.y > H + 50) { a.respawn(); }
   });
   lastScrollY = window.scrollY;
 }, { passive: true });
@@ -818,16 +893,64 @@ function tick() {
 }
 tick(); setInterval(tick, 1000);
 
-// AMBIENT NOISE LINE
-const nL = document.getElementById('hero-noise');
-const nC = '·—░▒|/\\!▓ ';
-setInterval(() => {
-  if (Math.random() > 0.82) {
-    nL.textContent = Array.from({ length: 40 }, () =>
-      Math.random() > 0.72 ? nC[Math.floor(Math.random() * nC.length)] : '·'
-    ).join(' ');
-  }
-}, 200);
+// GARDEN BUTTON POPUP
+const gardenBtn = document.getElementById('garden-btn');
+const gardenModal = document.getElementById('garden-modal');
+const gardenMsg = document.getElementById('garden-msg');
+
+function drawFlower() {
+  const fc = document.getElementById('flower-canvas');
+  const fx = fc.getContext('2d');
+  const S = 5;
+  const G = [
+    [0,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0],
+    [0,0,1,1,1,1,1,1,1,0,0,0,0,0,0,0],
+    [0,1,1,0,1,1,1,0,1,1,0,0,0,0,0,0],
+    [0,1,0,0,0,1,1,0,0,1,0,0,0,0,0,0],
+    [1,1,0,0,2,2,2,0,0,1,1,0,0,0,0,0],
+    [1,1,0,0,2,2,2,0,0,1,1,0,0,0,0,0],
+    [0,1,0,0,0,1,1,0,0,1,0,0,0,0,0,0],
+    [0,1,1,0,1,1,1,0,1,1,0,0,0,0,0,0],
+    [0,0,1,1,1,1,1,1,1,0,0,0,0,0,0,0],
+    [0,0,0,1,0,1,1,0,1,0,0,0,0,0,0,0],
+    [0,0,0,0,0,3,3,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,3,3,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,3,3,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,3,3,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,3,3,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  ];
+  const C = { 1:'#6a5248', 2:'#3d1e1e', 3:'#5a6840' };
+  fx.clearRect(0, 0, 80, 80);
+  G.forEach((row, ry) => {
+    row.forEach((v, rx) => {
+      if (!v) return;
+      fx.fillStyle = C[v];
+      fx.fillRect(rx * S, ry * S, S, S);
+    });
+  });
+}
+
+const gMsgs = [
+  'the garden is sealed.',
+  'patience.',
+  'it is not yet time.',
+  'the garden does not open on demand.',
+  'you are not ready for the garden.',
+  'the garden remembers. come back.',
+  'not everything blooms at once.',
+];
+let gIdx = 0;
+
+gardenBtn.addEventListener('click', e => {
+  e.preventDefault();
+  drawFlower();
+  gardenMsg.textContent = gMsgs[gIdx % gMsgs.length];
+  gIdx++;
+  gardenModal.classList.add('open');
+});
+
+gardenModal.addEventListener('click', () => gardenModal.classList.remove('open'));
 
 // MORSE
 const mEl = document.getElementById('col-signal');
