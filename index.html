@@ -216,16 +216,11 @@ nav{
   white-space:nowrap;
 }
 .prophet-inner::before{color:var(--red);left:-2px}
-.prophet-inner::after{color:rgba(255,255,255,0.9);left:2px}
+.prophet-inner::after{display:none}
 
-.prophet-inner:hover::before,
-.prophet-inner:hover::after{
+.prophet-inner:hover::before{
   opacity:1;
   animation:title-glitch 0.18s steps(1) infinite;
-}
-
-.prophet-inner:hover::after{
-  animation:title-glitch-white 0.22s steps(1) infinite;
 }
 
 @keyframes title-glitch{
@@ -235,15 +230,6 @@ nav{
   60%{clip-path:inset(75% 0 8% 0)}
   80%{clip-path:inset(5% 0 88% 0)}
   100%{clip-path:inset(42% 0 45% 0)}
-}
-
-@keyframes title-glitch-white{
-  0%{clip-path:inset(68% 0 5% 0)}
-  20%{clip-path:inset(20% 0 72% 0)}
-  40%{clip-path:inset(85% 0 3% 0)}
-  60%{clip-path:inset(40% 0 48% 0)}
-  80%{clip-path:inset(8% 0 82% 0)}
-  100%{clip-path:inset(55% 0 28% 0)}
 }
 
 /* COUNTDOWN */
@@ -701,118 +687,147 @@ footer{
 </div>
 
 <script>
-// ASH PARTICLE SYSTEM
+// THREE-LAYER ATMOSPHERIC ASH SYSTEM
+// Layer 1: Film grain (scattered pixels every frame)
+// Layer 2: Brownian floating dust (300 particles, micro-drift)
+// Layer 3: Slow visible falling specks (12 rare larger flakes)
 const canvas = document.getElementById('bg');
 const ctx = canvas.getContext('2d');
-let W, H, ash = [];
+let W, H;
+let dustPts = [];
+let slowFlakes = [];
 
 function resize() {
   W = canvas.width = window.innerWidth;
   H = canvas.height = window.innerHeight;
 }
 
-function Ash() { this.init(true); }
-
-Ash.prototype.init = function(initial) {
-  this.x  = (Math.random() * (W + 160)) - 80;
-  // on first load distribute across full screen; after that spawn above
-  this.y  = initial ? Math.random() * H : -(8 + Math.random() * 80);
-
-  const r = Math.random();
-  if      (r > 0.97) { this.sz = 4 + Math.random() * 4;   this.cls = 'lg'; }
-  else if (r > 0.80) { this.sz = 1.5 + Math.random() * 2.5; this.cls = 'md'; }
-  else               { this.sz = 0.5 + Math.random() * 1.2; this.cls = 'sm'; }
-
-  // rare ember — very slightly warm-toned
-  this.ember = Math.random() > 0.97;
-
-  // physics — lighter pieces fall slower and drift more
-  const inv = 1 / (this.sz * 0.6 + 0.5);
-  this.vy  = 0.05 + inv * 0.45 + Math.random() * 0.4;
-  this.vx  = (Math.random() - 0.5) * 0.25;
-
-  // rotation — flat pieces tumble visually
-  this.ang  = Math.random() * Math.PI;
-  this.spin = (Math.random() - 0.5) * 0.015 * (0.4 + inv);
-
-  // individual sinusoidal air drift
-  this.wt  = Math.random() * Math.PI * 2;
-  this.wts = 0.004 + Math.random() * 0.01;
-  this.wta = 0.08 + Math.random() * 0.35 * inv;
-
-  // opacity by class
-  if      (this.cls === 'sm') this.baseOp = 0.07 + Math.random() * 0.16;
-  else if (this.cls === 'md') this.baseOp = 0.15 + Math.random() * 0.28;
-  else                        this.baseOp = 0.22 + Math.random() * 0.36;
-
-  // color — burnt tones from near-black to warm grey
+// ── LAYER 2: Brownian dust particle ──
+function Dust() { this.reset(true); }
+Dust.prototype.reset = function(init) {
+  this.x  = Math.random() * W;
+  this.y  = init ? Math.random() * H : Math.random() * H;
+  this.vx = (Math.random() - 0.5) * 0.18;
+  this.vy = -0.02 + Math.random() * 0.08; // nearly still, barely drifts down
+  this.sz = Math.random() > 0.88 ? 2 : 1;
+  this.ember = Math.random() > 0.91; // ~9% ember-toned
+  this.baseOp = 0.06 + Math.random() * 0.18;
+  this.lt  = Math.random() * Math.PI * 2; // life phase for flicker
+  this.lts = 0.008 + Math.random() * 0.02;
   if (this.ember) {
-    this.rgb = [110, 48, 28]; // rare warm ember tone
+    this.r = 175 + Math.floor(Math.random() * 40);
+    this.g = 55  + Math.floor(Math.random() * 30);
+    this.b = 15  + Math.floor(Math.random() * 20);
   } else {
-    const t = Math.random();
-    if      (t > 0.93) this.rgb = [38,  20, 18 ];
-    else if (t > 0.82) this.rgb = [68,  44, 40 ];
-    else if (t > 0.64) this.rgb = [86,  66, 60 ];
-    else if (t > 0.38) this.rgb = [104, 88, 82 ];
-    else               this.rgb = [122,108,102 ];
+    const v = 32 + Math.floor(Math.random() * 68);
+    this.r = v; this.g = v - 6; this.b = v - 10;
   }
 };
-
-Ash.prototype.respawn = function() { this.init(false); };
-
-Ash.prototype.step = function() {
-  this.wt  += this.wts;
-  this.x   += this.vx + Math.sin(this.wt) * this.wta;
-  this.y   += this.vy;
-  this.ang += this.spin;
-  if (this.y > H + 40 || this.x < -120 || this.x > W + 120) this.respawn();
+Dust.prototype.step = function() {
+  // brownian: small random nudge every frame
+  this.vx += (Math.random() - 0.5) * 0.06;
+  this.vy += (Math.random() - 0.5) * 0.03 + 0.003;
+  this.vx *= 0.96; // dampen
+  this.vy *= 0.97;
+  this.x  += this.vx;
+  this.y  += this.vy;
+  this.lt += this.lts;
+  // wrap edges
+  if (this.x < -4) this.x = W + 4;
+  if (this.x > W + 4) this.x = -4;
+  if (this.y > H + 4) this.y = -4;
+  if (this.y < -4) this.y = H + 4;
+};
+Dust.prototype.paint = function() {
+  const flicker = 0.55 + 0.45 * Math.abs(Math.sin(this.lt));
+  ctx.globalAlpha = this.baseOp * flicker;
+  ctx.fillStyle = `rgb(${this.r},${this.g},${this.b})`;
+  ctx.fillRect(this.x, this.y, this.sz, this.sz);
 };
 
-Ash.prototype.paint = function() {
-  // KEY to realism: opacity breathes with angle — flat face reflects light,
-  // edge-on the piece nearly disappears. Mimics real tumbling ash.
-  const facingLight = Math.abs(Math.cos(this.ang * 2));
-  const op = this.baseOp * (0.35 + 0.65 * facingLight);
-
-  ctx.save();
-  ctx.translate(this.x, this.y);
-  ctx.rotate(this.ang);
-  ctx.globalAlpha = op;
-  ctx.fillStyle = `rgb(${this.rgb[0]},${this.rgb[1]},${this.rgb[2]})`;
-
-  const s = this.sz;
-  if (this.cls === 'sm') {
-    // fine dust — just a pixel point
-    ctx.fillRect(-s * 0.5, -s * 0.5, s, s);
-  } else if (this.cls === 'md') {
-    // THIN STRIP — the key to realistic ash. A thin flat piece tumbling.
-    // When face-on: looks like a small rectangle
-    // When edge-on: nearly invisible — exactly like real ash
-    ctx.fillRect(-s, -0.6, s * 2, 1.2);
-  } else {
-    // larger piece — still thin, slightly wider
-    ctx.fillRect(-s, -0.9, s * 2, 1.8);
-    // torn edge: second smaller offset layer
-    ctx.globalAlpha = op * 0.45;
-    ctx.fillRect(-s * 0.55, -1.6, s * 1.1, 0.9);
-  }
-  ctx.restore();
+// ── LAYER 3: Slow falling visible speck ──
+function Speck() { this.reset(true); }
+Speck.prototype.reset = function(init) {
+  this.x  = Math.random() * W;
+  this.y  = init ? Math.random() * H : -(5 + Math.random() * 40);
+  this.vy = 0.08 + Math.random() * 0.22; // very slow fall
+  this.wt = Math.random() * Math.PI * 2;
+  this.wts = 0.004 + Math.random() * 0.007;
+  this.wta = 0.12 + Math.random() * 0.25; // gentle horizontal drift
+  this.sz = 1.5 + Math.random() * 1.5;
+  this.op = 0.14 + Math.random() * 0.24;
+  const v = 40 + Math.floor(Math.random() * 45);
+  this.r = v; this.g = v - 8; this.b = v - 12;
+};
+Speck.prototype.step = function() {
+  this.wt += this.wts;
+  this.x  += Math.sin(this.wt) * this.wta;
+  this.y  += this.vy;
+  if (this.y > H + 10) this.reset(false);
+  if (this.x < -10 || this.x > W + 10) this.reset(false);
+};
+Speck.prototype.paint = function() {
+  ctx.globalAlpha = this.op;
+  ctx.fillStyle = `rgb(${this.r},${this.g},${this.b})`;
+  ctx.fillRect(this.x, this.y, this.sz, this.sz);
 };
 
-function initAsh() {
-  ash = [];
-  for (let i = 0; i < 800; i++) ash.push(new Ash());
+function initParticles() {
+  dustPts   = Array.from({ length: 320 }, () => new Dust());
+  slowFlakes = Array.from({ length: 14 },  () => new Speck());
+}
+
+// ── LAYER 1: Film grain (drawn in batches by color) ──
+function drawGrain() {
+  // compute grain density based on screen size
+  const n = Math.floor(W * H * 0.0022);
+  const nEmber = Math.floor(n * 0.055);
+  const nDark  = Math.floor(n * 0.38);
+  const nMid   = Math.floor(n * 0.35);
+  const nLight = n - nEmber - nDark - nMid;
+
+  // ember grain — orange-red
+  ctx.fillStyle = 'rgba(195,65,22,0.42)';
+  for (let i = 0; i < nEmber; i++)
+    ctx.fillRect(Math.random() * W | 0, Math.random() * H | 0, 1, 1);
+
+  // near-black grain
+  ctx.fillStyle = 'rgba(28,16,14,0.32)';
+  for (let i = 0; i < nDark; i++)
+    ctx.fillRect(Math.random() * W | 0, Math.random() * H | 0, 1, 1);
+
+  // mid grey
+  ctx.fillStyle = 'rgba(74,58,52,0.25)';
+  for (let i = 0; i < nMid; i++)
+    ctx.fillRect(Math.random() * W | 0, Math.random() * H | 0, 1, 1);
+
+  // lighter grey
+  ctx.fillStyle = 'rgba(110,94,88,0.18)';
+  for (let i = 0; i < nLight; i++)
+    ctx.fillRect(Math.random() * W | 0, Math.random() * H | 0, 1, 1);
 }
 
 function loop() {
+  // ivory base
   ctx.fillStyle = '#f0e8e0';
   ctx.fillRect(0, 0, W, H);
-  ash.forEach(a => { a.step(); a.paint(); });
+
+  // layer 1 — film grain (changes every frame)
+  drawGrain();
+
+  // layer 2 — floating brownian dust
+  ctx.globalAlpha = 1;
+  dustPts.forEach(p => { p.step(); p.paint(); });
+
+  // layer 3 — slow visible falling specks
+  slowFlakes.forEach(s => { s.step(); s.paint(); });
+
+  ctx.globalAlpha = 1;
   requestAnimationFrame(loop);
 }
 
-resize(); initAsh(); loop();
-window.addEventListener('resize', () => { resize(); initAsh(); });
+resize(); initParticles(); loop();
+window.addEventListener('resize', () => { resize(); initParticles(); });
 
 // SCRAMBLE
 const SYM = '!@#∎◈◯†❧∅|/\\?~—·x01';
@@ -833,17 +848,21 @@ document.querySelector('.logo').addEventListener('mouseenter', function() {
   scramble(this, '-PROPHET-', 400);
 });
 
-// TAGLINE
+// TAGLINE — the 13 one-liners
 const lines = [
-  'you found this for a reason.',
-  'it was always going to be you.',
-  '13 transmissions. no explanation.',
-  'the garden remembers everything.',
-  'do not look away.',
-  'something left this here.',
-  'origins do not forgive.',
-  'the 13th always comes.',
-  'you were warned.',
+  'it was always coming.',
+  'garden.',
+  'the youngest always first.',
+  'descended.',
+  'proximity.',
+  'red garden.',
+  'the herd.',
+  'unseen.',
+  'inherited.',
+  'the whole world.',
+  'this was home.',
+  'they played here.',
+  'ash garden',
 ];
 let tIdx = 0;
 const tag = document.getElementById('tagline');
