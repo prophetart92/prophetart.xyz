@@ -190,19 +190,21 @@ nav{
   font-family:'Bebas Neue',sans-serif;
   font-size:clamp(72px,14vw,160px);
   letter-spacing:0.08em;
-  color:var(--text);
   line-height:0.9;
   margin-bottom:48px;
-  position:relative;
-  cursor:default;
   user-select:none;
-  width:fit-content;
-  margin-left:auto;
-  margin-right:auto;
+  text-align:center;
 }
 
-.hero-title::before,
-.hero-title::after{
+.prophet-inner{
+  position:relative;
+  display:inline-block;
+  color:var(--text);
+  cursor:default;
+}
+
+.prophet-inner::before,
+.prophet-inner::after{
   content:'-PROPHET-';
   position:absolute;
   inset:0;
@@ -210,17 +212,19 @@ nav{
   font-family:'Bebas Neue',sans-serif;
   font-size:inherit;
   letter-spacing:inherit;
+  pointer-events:none;
+  white-space:nowrap;
 }
-.hero-title::before{color:var(--red);left:-2px}
-.hero-title::after{color:rgba(255,255,255,0.85);left:2px}
+.prophet-inner::before{color:var(--red);left:-2px}
+.prophet-inner::after{color:rgba(255,255,255,0.9);left:2px}
 
-.hero-title:hover::before,
-.hero-title:hover::after{
+.prophet-inner:hover::before,
+.prophet-inner:hover::after{
   opacity:1;
   animation:title-glitch 0.18s steps(1) infinite;
 }
 
-.hero-title:hover::after{
+.prophet-inner:hover::after{
   animation:title-glitch-white 0.22s steps(1) infinite;
 }
 
@@ -397,7 +401,7 @@ nav{
 
 .piece{
   aspect-ratio:3/4;
-  background:var(--bg2);
+  background:rgba(232,221,212,0.88);
   position:relative;
   overflow:hidden;
   cursor:pointer;
@@ -650,7 +654,7 @@ footer{
   </nav>
 
   <section class="hero">
-    <h1 class="hero-title" id="hero-title">-PROPHET-</h1>
+    <h1 class="hero-title"><span class="prophet-inner" id="hero-title">-PROPHET-</span></h1>
     <div class="countdown">
       <div class="cd-unit">
         <div class="cd-num" id="cd-d">00</div>
@@ -697,78 +701,79 @@ footer{
 </div>
 
 <script>
-// ASH PARTICLE SYSTEM — world-space, spawn above screen, fall through bottom
+// ASH PARTICLE SYSTEM
 const canvas = document.getElementById('bg');
 const ctx = canvas.getContext('2d');
 let W, H, ash = [];
-let lastScrollY = window.scrollY;
 
 function resize() {
   W = canvas.width = window.innerWidth;
   H = canvas.height = window.innerHeight;
 }
 
-function Ash() { this.init(); }
+function Ash() { this.init(true); }
 
-Ash.prototype.init = function() {
-  // ALL particles start from above the screen
-  this.x   = (Math.random() * (W + 160)) - 80;
-  this.y   = -(Math.random() * 300);          // spawn 0-300px above top edge
-  this.spawnedBelow = false;
+Ash.prototype.init = function(initial) {
+  this.x  = (Math.random() * (W + 160)) - 80;
+  // on first load distribute across full screen; after that spawn above
+  this.y  = initial ? Math.random() * H : -(8 + Math.random() * 80);
 
-  // size class
   const r = Math.random();
-  if      (r > 0.96) { this.sz = 3 + Math.random() * 3.5; this.cls = 'lg'; }
-  else if (r > 0.80) { this.sz = 1.2 + Math.random() * 2; this.cls = 'md'; }
-  else               { this.sz = 0.4 + Math.random() * 1;  this.cls = 'sm'; }
+  if      (r > 0.97) { this.sz = 4 + Math.random() * 4;   this.cls = 'lg'; }
+  else if (r > 0.80) { this.sz = 1.5 + Math.random() * 2.5; this.cls = 'md'; }
+  else               { this.sz = 0.5 + Math.random() * 1.2; this.cls = 'sm'; }
 
-  // physics — lighter = slower fall, more drift
-  const lightness = 1 / (this.sz + 0.5);
-  this.vy = 0.08 + lightness * 0.5 + Math.random() * 0.3;
-  this.vx = (Math.random() - 0.5) * 0.3;
+  // rare ember — very slightly warm-toned
+  this.ember = Math.random() > 0.97;
 
-  // rotation
+  // physics — lighter pieces fall slower and drift more
+  const inv = 1 / (this.sz * 0.6 + 0.5);
+  this.vy  = 0.05 + inv * 0.45 + Math.random() * 0.4;
+  this.vx  = (Math.random() - 0.5) * 0.25;
+
+  // rotation — flat pieces tumble visually
   this.ang  = Math.random() * Math.PI;
-  this.spin = (Math.random() - 0.5) * 0.02 * lightness;
+  this.spin = (Math.random() - 0.5) * 0.015 * (0.4 + inv);
 
-  // sinusoidal drift — unique per flake
+  // individual sinusoidal air drift
   this.wt  = Math.random() * Math.PI * 2;
-  this.wts = 0.003 + Math.random() * 0.01;
-  this.wta = 0.1 + Math.random() * 0.45 * lightness;
+  this.wts = 0.004 + Math.random() * 0.01;
+  this.wta = 0.08 + Math.random() * 0.35 * inv;
 
-  // base opacity
-  if      (this.cls === 'sm') this.baseOp = 0.06 + Math.random() * 0.16;
-  else if (this.cls === 'md') this.baseOp = 0.14 + Math.random() * 0.26;
-  else                        this.baseOp = 0.20 + Math.random() * 0.35;
+  // opacity by class
+  if      (this.cls === 'sm') this.baseOp = 0.07 + Math.random() * 0.16;
+  else if (this.cls === 'md') this.baseOp = 0.15 + Math.random() * 0.28;
+  else                        this.baseOp = 0.22 + Math.random() * 0.36;
 
-  // ash tone
-  const t = Math.random();
-  if      (t > 0.94) this.rgb = [40,  20, 18 ];
-  else if (t > 0.84) this.rgb = [70,  44, 40 ];
-  else if (t > 0.66) this.rgb = [88,  68, 62 ];
-  else if (t > 0.40) this.rgb = [106, 90, 84 ];
-  else               this.rgb = [124,110,104 ];
+  // color — burnt tones from near-black to warm grey
+  if (this.ember) {
+    this.rgb = [110, 48, 28]; // rare warm ember tone
+  } else {
+    const t = Math.random();
+    if      (t > 0.93) this.rgb = [38,  20, 18 ];
+    else if (t > 0.82) this.rgb = [68,  44, 40 ];
+    else if (t > 0.64) this.rgb = [86,  66, 60 ];
+    else if (t > 0.38) this.rgb = [104, 88, 82 ];
+    else               this.rgb = [122,108,102 ];
+  }
 };
 
-// respawn at top after passing bottom
-Ash.prototype.respawn = function() {
-  this.x   = (Math.random() * (W + 160)) - 80;
-  this.y   = -(10 + Math.random() * 60);
-  this.wt  = Math.random() * Math.PI * 2;
-  this.ang = Math.random() * Math.PI;
-};
+Ash.prototype.respawn = function() { this.init(false); };
 
 Ash.prototype.step = function() {
   this.wt  += this.wts;
   this.x   += this.vx + Math.sin(this.wt) * this.wta;
   this.y   += this.vy;
   this.ang += this.spin;
-  if (this.y > H + 30 || this.x < -100 || this.x > W + 100) this.respawn();
+  if (this.y > H + 40 || this.x < -120 || this.x > W + 120) this.respawn();
 };
 
 Ash.prototype.paint = function() {
-  // opacity breathes with rotation — light catches flake at different angles
-  const op = this.baseOp * (0.6 + 0.4 * Math.abs(Math.sin(this.ang)));
+  // KEY to realism: opacity breathes with angle — flat face reflects light,
+  // edge-on the piece nearly disappears. Mimics real tumbling ash.
+  const facingLight = Math.abs(Math.cos(this.ang * 2));
+  const op = this.baseOp * (0.35 + 0.65 * facingLight);
+
   ctx.save();
   ctx.translate(this.x, this.y);
   ctx.rotate(this.ang);
@@ -777,36 +782,26 @@ Ash.prototype.paint = function() {
 
   const s = this.sz;
   if (this.cls === 'sm') {
-    // fine dust — tiny rect
-    ctx.fillRect(-s * 0.5, -s * 0.25, s, s * 0.5);
+    // fine dust — just a pixel point
+    ctx.fillRect(-s * 0.5, -s * 0.5, s, s);
   } else if (this.cls === 'md') {
-    // medium — small rounded rect, no complex paths
-    ctx.beginPath();
-    ctx.roundRect(-s, -s * 0.4, s * 2, s * 0.8, s * 0.3);
-    ctx.fill();
+    // THIN STRIP — the key to realistic ash. A thin flat piece tumbling.
+    // When face-on: looks like a small rectangle
+    // When edge-on: nearly invisible — exactly like real ash
+    ctx.fillRect(-s, -0.6, s * 2, 1.2);
   } else {
-    // large — slightly larger rounded blob
-    ctx.beginPath();
-    ctx.roundRect(-s * 0.9, -s * 0.45, s * 1.8, s * 0.9, s * 0.4);
-    ctx.fill();
-    // add a second slightly offset layer for torn look
-    ctx.globalAlpha = op * 0.5;
-    ctx.beginPath();
-    ctx.roundRect(-s * 0.6, -s * 0.6, s * 1.2, s * 0.55, s * 0.25);
-    ctx.fill();
+    // larger piece — still thin, slightly wider
+    ctx.fillRect(-s, -0.9, s * 2, 1.8);
+    // torn edge: second smaller offset layer
+    ctx.globalAlpha = op * 0.45;
+    ctx.fillRect(-s * 0.55, -1.6, s * 1.1, 0.9);
   }
   ctx.restore();
 };
 
 function initAsh() {
   ash = [];
-  // first batch: spread across screen so it looks populated immediately
-  for (let i = 0; i < 700; i++) {
-    const a = new Ash();
-    // override y to distribute across full screen height for initial load
-    a.y = Math.random() * (H + 400) - 200;
-    ash.push(a);
-  }
+  for (let i = 0; i < 800; i++) ash.push(new Ash());
 }
 
 function loop() {
@@ -815,17 +810,6 @@ function loop() {
   ash.forEach(a => { a.step(); a.paint(); });
   requestAnimationFrame(loop);
 }
-
-// SCROLL TRACKING — offset particles by scroll so ash is in world-space
-window.addEventListener('scroll', () => {
-  const delta = window.scrollY - lastScrollY;
-  ash.forEach(a => {
-    a.y -= delta;
-    if (a.y < -350) { a.respawn(); }
-    if (a.y > H + 50) { a.respawn(); }
-  });
-  lastScrollY = window.scrollY;
-}, { passive: true });
 
 resize(); initAsh(); loop();
 window.addEventListener('resize', () => { resize(); initAsh(); });
@@ -917,34 +901,52 @@ const gardenMsg = document.getElementById('garden-msg');
 function drawFlower() {
   const fc = document.getElementById('flower-canvas');
   const fx = fc.getContext('2d');
-  const S = 5;
-  const G = [
-    [0,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0],
-    [0,0,1,1,1,1,1,1,1,0,0,0,0,0,0,0],
-    [0,1,1,0,1,1,1,0,1,1,0,0,0,0,0,0],
-    [0,1,0,0,0,1,1,0,0,1,0,0,0,0,0,0],
-    [1,1,0,0,2,2,2,0,0,1,1,0,0,0,0,0],
-    [1,1,0,0,2,2,2,0,0,1,1,0,0,0,0,0],
-    [0,1,0,0,0,1,1,0,0,1,0,0,0,0,0,0],
-    [0,1,1,0,1,1,1,0,1,1,0,0,0,0,0,0],
-    [0,0,1,1,1,1,1,1,1,0,0,0,0,0,0,0],
-    [0,0,0,1,0,1,1,0,1,0,0,0,0,0,0,0],
-    [0,0,0,0,0,3,3,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,3,3,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,3,3,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,3,3,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,3,3,0,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  ];
-  const C = { 1:'#6a5248', 2:'#3d1e1e', 3:'#5a6840' };
-  fx.clearRect(0, 0, 80, 80);
-  G.forEach((row, ry) => {
-    row.forEach((v, rx) => {
-      if (!v) return;
-      fx.fillStyle = C[v];
-      fx.fillRect(rx * S, ry * S, S, S);
-    });
+
+  // Draw at 16x16 then scale to 80x80 for pixel art look
+  const tmp = document.createElement('canvas');
+  tmp.width = 16; tmp.height = 16;
+  const tc = tmp.getContext('2d');
+  tc.fillStyle = '#1a0a0a'; // near black outline
+
+  // Simple bloom — 6 petals (outline rings) around a center ring
+  // Each petal is a small circle outline, center ring is slightly larger
+  const cx = 7.5, cy = 7.5;
+  const petalDist = 3.8;
+  const petalR = 2.2;
+  const centerR = 1.8;
+
+  // draw a circle outline as filled pixel squares on the small canvas
+  function ring(px, py, r) {
+    for (let dy = -Math.ceil(r)-1; dy <= Math.ceil(r)+1; dy++) {
+      for (let dx = -Math.ceil(r)-1; dx <= Math.ceil(r)+1; dx++) {
+        const d = Math.sqrt(dx*dx + dy*dy);
+        if (d >= r - 0.65 && d <= r + 0.15) {
+          const px2 = Math.round(px + dx);
+          const py2 = Math.round(py + dy);
+          if (px2 >= 0 && px2 < 16 && py2 >= 0 && py2 < 16) {
+            tc.fillRect(px2, py2, 1, 1);
+          }
+        }
+      }
+    }
+  }
+
+  // 6 petal outlines
+  [0, 60, 120, 180, 240, 300].forEach(deg => {
+    const rad = deg * Math.PI / 180;
+    ring(cx + Math.cos(rad) * petalDist, cy + Math.sin(rad) * petalDist, petalR);
   });
+
+  // center ring
+  ring(cx, cy, centerR);
+
+  // stem — 3 pixels down then angling
+  [[7,11],[7,12],[7,13],[6,14],[6,15]].forEach(([x,y]) => tc.fillRect(x,y,1,1));
+
+  // scale up with hard pixel rendering
+  fx.imageSmoothingEnabled = false;
+  fx.clearRect(0, 0, 80, 80);
+  fx.drawImage(tmp, 0, 0, 16, 16, 0, 0, 80, 80);
 }
 
 const gMsgs = [
