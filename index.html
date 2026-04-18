@@ -83,17 +83,8 @@ nav{
   cursor:pointer;
   user-select:none;
   text-decoration:none;
-  animation:logo-flicker 11s infinite;
 }
 .logo:hover{ color:var(--text); }
-
-@keyframes logo-flicker{
-  0%,91%,93%,96%,100%{opacity:1}
-  92%{opacity:0.3}
-  94%{opacity:0.8}
-  95%{opacity:0.2}
-  97%{opacity:0.9}
-}
 
 .nav-symbols{
   display:flex;
@@ -215,21 +206,40 @@ nav{
   pointer-events:none;
   white-space:nowrap;
 }
-.prophet-inner::before{color:var(--red);left:-2px}
-.prophet-inner::after{display:none}
+.prophet-inner::before{color:var(--red);left:-3px}
+.prophet-inner::after{color:rgba(145,132,128,0.65);left:3px;display:inline}
 
 .prophet-inner:hover::before{
   opacity:1;
-  animation:title-glitch 0.18s steps(1) infinite;
+  animation:glitch-red 0.14s steps(1) infinite;
+}
+.prophet-inner:hover::after{
+  opacity:1;
+  animation:glitch-grey 0.21s steps(1) infinite;
 }
 
-@keyframes title-glitch{
-  0%{clip-path:inset(10% 0 78% 0)}
-  20%{clip-path:inset(55% 0 22% 0)}
-  40%{clip-path:inset(30% 0 60% 0)}
-  60%{clip-path:inset(75% 0 8% 0)}
-  80%{clip-path:inset(5% 0 88% 0)}
-  100%{clip-path:inset(42% 0 45% 0)}
+@keyframes glitch-red{
+  0%  {clip-path:inset(8% 0 80% 0); transform:translateX(-4px)}
+  11% {clip-path:inset(62% 0 18% 0);transform:translateX(0)}
+  22% {clip-path:inset(25% 0 55% 0);transform:translateX(-5px)}
+  33% {clip-path:inset(82% 0 3% 0); transform:translateX(4px)}
+  44% {clip-path:inset(40% 0 42% 0);transform:translateX(0)}
+  55% {clip-path:inset(14% 0 72% 0);transform:translateX(-6px)}
+  66% {clip-path:inset(70% 0 8% 0); transform:translateX(3px)}
+  77% {clip-path:inset(33% 0 50% 0);transform:translateX(0)}
+  88% {clip-path:inset(4% 0 90% 0); transform:translateX(-3px)}
+  100%{clip-path:inset(55% 0 28% 0);transform:translateX(5px)}
+}
+
+@keyframes glitch-grey{
+  0%  {clip-path:inset(50% 0 35% 0);transform:translateX(3px)}
+  14% {clip-path:inset(10% 0 76% 0);transform:translateX(-2px)}
+  28% {clip-path:inset(76% 0 6% 0); transform:translateX(5px)}
+  42% {clip-path:inset(28% 0 55% 0);transform:translateX(0)}
+  57% {clip-path:inset(90% 0 2% 0); transform:translateX(-5px)}
+  71% {clip-path:inset(18% 0 68% 0);transform:translateX(2px)}
+  85% {clip-path:inset(60% 0 22% 0);transform:translateX(-4px)}
+  100%{clip-path:inset(42% 0 40% 0);transform:translateX(3px)}
 }
 
 /* COUNTDOWN */
@@ -662,7 +672,7 @@ footer{
   <nav>
     <a class="logo" href="#"><span class="rc" data-c="-">-</span><span class="rc" data-c="P">P</span><span class="rc" data-c="R">R</span><span class="rc" data-c="O">O</span><span class="rc" data-c="P">P</span><span class="rc" data-c="H">H</span><span class="rc" data-c="E">E</span><span class="rc" data-c="T">T</span><span class="rc" data-c="-">-</span></a>
     <ul class="nav-symbols">
-      <li><a class="nav-sym" href="#grid">⌬<span class="sym-tip">origins</span></a></li>
+      <li><a class="nav-sym" href="#">⌬<span class="sym-tip">origins</span></a></li>
       <li><a class="nav-sym" id="garden-btn" href="#">✿<span class="sym-tip">garden</span></a></li>
       <li><a class="nav-mint" href="https://www.transient.xyz/mint/-prophet-origins" target="_blank" rel="noopener">collect →</a></li>
       <li><a class="nav-x" href="https://x.com/ProphetART92" target="_blank" rel="noopener">𝕏</a></li>
@@ -1050,14 +1060,21 @@ const mEl = document.getElementById('col-signal');
 const mP = ['· · ·', '— · —', '· — ·', '— — —', '· · · ·', '— ·', '· —'];
 setInterval(() => { mEl.textContent = mP[Math.floor(Math.random() * mP.length)]; }, 1700);
 
-// RANDOM TITLE GLITCH
-setInterval(() => {
-  if (Math.random() > 0.88) {
-    const t = document.getElementById('hero-title');
-    t.style.transform = `skewX(${(Math.random() - 0.5) * 1.5}deg) translateX(${(Math.random() - 0.5) * 3}px)`;
-    setTimeout(() => { t.style.transform = ''; }, 70);
-  }
-}, 2800);
+// PROPHET HOVER GLITCH — random skew/shake during hover
+const prophetEl = document.getElementById('hero-title');
+let prophetGlitch;
+prophetEl.addEventListener('mouseenter', () => {
+  prophetGlitch = setInterval(() => {
+    const skew = (Math.random() - 0.5) * 5;
+    const tx   = (Math.random() - 0.5) * 10;
+    prophetEl.style.transform = `skewX(${skew}deg) translateX(${tx}px)`;
+    setTimeout(() => { prophetEl.style.transform = ''; }, 55);
+  }, 120 + Math.random() * 180);
+});
+prophetEl.addEventListener('mouseleave', () => {
+  clearInterval(prophetGlitch);
+  prophetEl.style.transform = '';
+});
 
 // ART GRID
 const images = [
