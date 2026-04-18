@@ -363,12 +363,13 @@ nav{
   font-family:'Bebas Neue',sans-serif;
   font-size:32px;
   letter-spacing:0.4em;
-  color:var(--faint);
+  color:var(--text);
   cursor:pointer;
   user-select:none;
-  transition:color 0.3s;
 }
-.col-title:hover{color:var(--muted)}
+.col-title .rc.shown{
+  color:var(--text) !important;
+}
 
 .col-signal{
   font-size:12px;
@@ -659,8 +660,10 @@ footer{
       <li><a class="nav-mint" href="https://www.transient.xyz/mint/-prophet-origins" target="_blank" rel="noopener">collect →</a></li>
       <li><a class="nav-x" href="https://x.com/ProphetART92" target="_blank" rel="noopener">𝕏</a></li>
       <li><a class="nav-x nav-os" href="https://opensea.io/collection/-origins-" target="_blank" rel="noopener" title="opensea">
-        <svg width="14" height="14" viewBox="0 0 90 90" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-          <path d="M45 0C20.151 0 0 20.151 0 45C0 69.849 20.151 90 45 90C69.849 90 90 69.849 90 45C90 20.151 69.849 0 45 0ZM22.203 46.512L22.394 46.203L33.795 27.478C33.967 27.2 34.362 27.225 34.496 27.527C36.338 31.697 37.932 36.868 37.184 40.138C36.861 41.524 35.964 43.405 34.949 45.104C34.822 45.337 34.682 45.565 34.533 45.782C34.461 45.888 34.343 45.948 34.217 45.948H22.538C22.207 45.948 22.015 45.588 22.203 46.512Z"/>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M7 13.5c1.5-2 3-2 5 0s3.5 2 5 0"/>
+          <path d="M7 10c1.5-2 3-2 5 0s3.5 2 5 0"/>
         </svg>
       </a></li>
     </ul>
@@ -809,7 +812,7 @@ Speck.prototype.paint = function() {
 
 function initParticles() {
   dustPts    = Array.from({ length: 550 }, () => new Dust());
-  slowFlakes = Array.from({ length: 160 }, () => new Speck());
+  slowFlakes = Array.from({ length: 220 }, () => new Speck());
 }
 
 // ── LAYER 1: Film grain (drawn in batches by color) ──
