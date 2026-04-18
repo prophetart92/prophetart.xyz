@@ -708,18 +708,18 @@ Dust.prototype.reset = function(init) {
   this.x  = Math.random() * W;
   this.y  = init ? Math.random() * H : Math.random() * H;
   this.vx = (Math.random() - 0.5) * 0.18;
-  this.vy = -0.02 + Math.random() * 0.08; // nearly still, barely drifts down
-  this.sz = Math.random() > 0.88 ? 2 : 1;
-  this.ember = Math.random() > 0.91; // ~9% ember-toned
-  this.baseOp = 0.06 + Math.random() * 0.18;
-  this.lt  = Math.random() * Math.PI * 2; // life phase for flicker
+  this.vy = -0.02 + Math.random() * 0.08;
+  this.sz = Math.random() > 0.82 ? 2 : 1;
+  this.ember = Math.random() > 0.91;
+  this.baseOp = 0.28 + Math.random() * 0.42;  // much higher — dark on light needs it
+  this.lt  = Math.random() * Math.PI * 2;
   this.lts = 0.008 + Math.random() * 0.02;
   if (this.ember) {
     this.r = 175 + Math.floor(Math.random() * 40);
     this.g = 55  + Math.floor(Math.random() * 30);
     this.b = 15  + Math.floor(Math.random() * 20);
   } else {
-    const v = 32 + Math.floor(Math.random() * 68);
+    const v = 25 + Math.floor(Math.random() * 55);
     this.r = v; this.g = v - 6; this.b = v - 10;
   }
 };
@@ -754,9 +754,9 @@ Speck.prototype.reset = function(init) {
   this.wt = Math.random() * Math.PI * 2;
   this.wts = 0.004 + Math.random() * 0.007;
   this.wta = 0.12 + Math.random() * 0.25; // gentle horizontal drift
-  this.sz = 1.5 + Math.random() * 1.5;
-  this.op = 0.14 + Math.random() * 0.24;
-  const v = 40 + Math.floor(Math.random() * 45);
+  this.sz = 1.5 + Math.random() * 2;
+  this.op = 0.38 + Math.random() * 0.38;
+  const v = 28 + Math.floor(Math.random() * 40);
   this.r = v; this.g = v - 8; this.b = v - 12;
 };
 Speck.prototype.step = function() {
@@ -773,36 +773,35 @@ Speck.prototype.paint = function() {
 };
 
 function initParticles() {
-  dustPts   = Array.from({ length: 320 }, () => new Dust());
-  slowFlakes = Array.from({ length: 14 },  () => new Speck());
+  dustPts    = Array.from({ length: 550 }, () => new Dust());
+  slowFlakes = Array.from({ length: 18 },  () => new Speck());
 }
 
 // ── LAYER 1: Film grain (drawn in batches by color) ──
 function drawGrain() {
-  // compute grain density based on screen size
-  const n = Math.floor(W * H * 0.0022);
-  const nEmber = Math.floor(n * 0.055);
-  const nDark  = Math.floor(n * 0.38);
-  const nMid   = Math.floor(n * 0.35);
+  const n = Math.floor(W * H * 0.014); // ~1.4% pixel coverage — visible on light bg
+  const nEmber = Math.floor(n * 0.06);
+  const nDark  = Math.floor(n * 0.40);
+  const nMid   = Math.floor(n * 0.34);
   const nLight = n - nEmber - nDark - nMid;
 
   // ember grain — orange-red
-  ctx.fillStyle = 'rgba(195,65,22,0.42)';
+  ctx.fillStyle = 'rgba(185,55,18,0.72)';
   for (let i = 0; i < nEmber; i++)
     ctx.fillRect(Math.random() * W | 0, Math.random() * H | 0, 1, 1);
 
   // near-black grain
-  ctx.fillStyle = 'rgba(28,16,14,0.32)';
+  ctx.fillStyle = 'rgba(22,12,10,0.65)';
   for (let i = 0; i < nDark; i++)
     ctx.fillRect(Math.random() * W | 0, Math.random() * H | 0, 1, 1);
 
-  // mid grey
-  ctx.fillStyle = 'rgba(74,58,52,0.25)';
+  // mid warm grey
+  ctx.fillStyle = 'rgba(68,50,44,0.52)';
   for (let i = 0; i < nMid; i++)
     ctx.fillRect(Math.random() * W | 0, Math.random() * H | 0, 1, 1);
 
-  // lighter grey
-  ctx.fillStyle = 'rgba(110,94,88,0.18)';
+  // lighter ash grey
+  ctx.fillStyle = 'rgba(98,80,74,0.38)';
   for (let i = 0; i < nLight; i++)
     ctx.fillRect(Math.random() * W | 0, Math.random() * H | 0, 1, 1);
 }
@@ -871,12 +870,14 @@ tag.addEventListener('click', () => {
   scramble(tag, lines[tIdx], 500);
 });
 
-// FOOTER
-const fLines = ['-prophet-', 'anonymous.', 'the 13th.', 'you were warned.', 'still here.'];
+// FOOTER — random cycle, never same back to back
+const fLines = ['prophet','13','you were warned.','the beginning.','the end.','origins','garden'];
 let fIdx = 0;
 const fL = document.getElementById('footer-l');
 fL.addEventListener('click', () => {
-  fIdx = (fIdx + 1) % fLines.length;
+  let next;
+  do { next = Math.floor(Math.random() * fLines.length); } while (next === fIdx);
+  fIdx = next;
   scramble(fL, fLines[fIdx], 350);
 });
 
