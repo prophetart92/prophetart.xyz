@@ -34,7 +34,7 @@
 html{scroll-behavior:smooth}
 
 body{
-  background:var(--bg);
+  background:transparent;
   color:var(--text);
   font-family:'Share Tech Mono',monospace;
   overflow-x:hidden;
@@ -68,7 +68,7 @@ nav{
   position:sticky;
   top:0;
   z-index:100;
-  background:rgba(240,232,224,0.92);
+  background:rgba(240,232,224,0.94);
   backdrop-filter:blur(14px);
 }
 
@@ -669,7 +669,9 @@ function initAsh() {
 }
 
 function loop() {
-  ctx.clearRect(0, 0, W, H);
+  // draw warm ivory background onto canvas so particles show against it
+  ctx.fillStyle = '#f0e8e0';
+  ctx.fillRect(0, 0, W, H);
   ash.forEach(a => { a.step(); a.paint(); });
   requestAnimationFrame(loop);
 }
