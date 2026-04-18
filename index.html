@@ -628,85 +628,67 @@ footer{
 </div>
 
 <script>
-// ASH PARTICLE SYSTEM — realistic, viewport-fixed
+// ASH PARTICLE SYSTEM — world-space realistic ash
 const canvas = document.getElementById('bg');
 const ctx = canvas.getContext('2d');
 let W, H, ash = [];
+let lastScrollY = window.scrollY;
 
 function resize() {
   W = canvas.width = window.innerWidth;
   H = canvas.height = window.innerHeight;
 }
 
-// Each ash flake has realistic tumbling, drift, and variable weight
 function Ash() { this.reset(true); }
 
 Ash.prototype.reset = function(init) {
-  this.x = Math.random() * (W + 60) - 30;
-  this.y = init ? Math.random() * H : -20;
+  this.x = (Math.random() * (W + 120)) - 60;
+  this.y = init ? Math.random() * H : -30;
 
-  // size — most tiny like real ash, occasionally a larger flake
-  const sizeRoll = Math.random();
-  if (sizeRoll > 0.93) {
-    this.w = 4 + Math.random() * 4;
-    this.h = 0.8 + Math.random() * 1.5;
-  } else if (sizeRoll > 0.7) {
-    this.w = 2 + Math.random() * 2.5;
-    this.h = 0.5 + Math.random() * 1;
-  } else {
-    this.w = 0.8 + Math.random() * 1.8;
-    this.h = 0.4 + Math.random() * 0.8;
-  }
+  const roll = Math.random();
+  if (roll > 0.97) { this.sz = 3.5 + Math.random() * 4; this.type = 2; }
+  else if (roll > 0.82) { this.sz = 1.4 + Math.random() * 2.4; this.type = 1; }
+  else { this.sz = 0.3 + Math.random() * 1.1; this.type = 0; }
 
-  // heavier flakes fall faster, lighter ones drift
-  const weight = this.w / 8;
-  this.vy = 0.18 + weight * 1.4 + Math.random() * 0.5;
-  this.vx = (Math.random() - 0.5) * 0.3;
+  const inv = 1 / (this.sz * 0.7 + 0.4);
+  this.vy  = 0.06 + inv * 0.55 + Math.random() * 0.35;
+  this.vx  = (Math.random() - 0.5) * 0.35;
+  this.angle = Math.random() * Math.PI * 2;
+  this.spin  = (Math.random() - 0.5) * 0.018 * Math.max(0.3, inv);
+  this.wt  = Math.random() * Math.PI * 2;
+  this.wts = 0.003 + Math.random() * 0.011;
+  this.wta = 0.12 + Math.random() * 0.5 * Math.max(0.4, inv);
 
-  // tumbling rotation
-  this.angle = Math.random() * Math.PI;
-  this.spin = (Math.random() - 0.5) * 0.025;
+  if (this.type === 0) this.baseOp = 0.05 + Math.random() * 0.15;
+  else if (this.type === 1) this.baseOp = 0.13 + Math.random() * 0.28;
+  else this.baseOp = 0.22 + Math.random() * 0.38;
+  this.op = this.baseOp;
 
-  // air current wobble — each flake has its own frequency
-  this.wx = Math.random() * Math.PI * 2;
-  this.wy = Math.random() * Math.PI * 2;
-  this.wxs = 0.006 + Math.random() * 0.014;
-  this.wys = 0.004 + Math.random() * 0.01;
-  this.wxa = 0.2 + Math.random() * 0.5; // horizontal drift amplitude
-
-  // opacity — smaller flakes more transparent
-  this.op = 0.08 + (this.w / 8) * 0.45 + Math.random() * 0.12;
-  this.op = Math.min(this.op, 0.55);
-
-  // color — warm ash tones, occasional near-black and red-brown
   const c = Math.random();
-  if (c > 0.92) {
-    this.fill = [60, 30, 28]; // near black red-brown
-  } else if (c > 0.78) {
-    this.fill = [95, 58, 52]; // dark warm brown
-  } else if (c > 0.55) {
-    this.fill = [88, 74, 70]; // warm charcoal
-  } else if (c > 0.3) {
-    this.fill = [108, 94, 88]; // medium warm grey
-  } else {
-    this.fill = [128, 114, 108]; // lighter ash
+  if      (c > 0.95) this.rgb = [38, 18, 16];
+  else if (c > 0.85) this.rgb = [72, 44, 40];
+  else if (c > 0.68) this.rgb = [86, 68, 62];
+  else if (c > 0.42) this.rgb = [104, 88, 82];
+  else               this.rgb = [122, 108, 102];
+
+  if (this.type > 0) {
+    const n = 4 + Math.floor(Math.random() * 4);
+    this.pts = [];
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + (Math.random() - 0.5) * 1.1;
+      const r = this.sz * (0.38 + Math.random() * 0.62);
+      this.pts.push([Math.cos(a) * r, Math.sin(a) * r]);
+    }
   }
 };
 
 Ash.prototype.step = function() {
-  this.wx += this.wxs;
-  this.wy += this.wys;
-  // horizontal air current — slight sinusoidal drift
-  this.x += this.vx + Math.sin(this.wx) * this.wxa;
-  // vertical — mostly down with tiny vertical oscillation for lightness
-  this.y += this.vy + Math.sin(this.wy) * 0.08;
-  // tumble
+  this.wt += this.wts;
+  this.x  += this.vx + Math.sin(this.wt) * this.wta;
+  this.y  += this.vy;
   this.angle += this.spin;
-  // slow deceleration/acceleration variance
-  this.vy += (Math.random() - 0.502) * 0.008;
-  this.vy = Math.max(0.1, Math.min(this.vy, 2.2));
-
-  if (this.y > H + 24 || this.x < -40 || this.x > W + 40) this.reset(false);
+  this.op = this.baseOp * (0.65 + 0.35 * Math.abs(Math.sin(this.angle)));
+  if (this.y > H + 40 || this.x < -80 || this.x > W + 80) this.reset(false);
 };
 
 Ash.prototype.paint = function() {
@@ -714,25 +696,45 @@ Ash.prototype.paint = function() {
   ctx.translate(this.x, this.y);
   ctx.rotate(this.angle);
   ctx.globalAlpha = this.op;
-  ctx.fillStyle = `rgb(${this.fill[0]},${this.fill[1]},${this.fill[2]})`;
-  ctx.beginPath();
-  ctx.ellipse(0, 0, this.w, this.h, 0, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.fillStyle = `rgb(${this.rgb[0]},${this.rgb[1]},${this.rgb[2]})`;
+  if (this.type === 0) {
+    ctx.fillRect(-this.sz * 0.5, -this.sz * 0.3, this.sz, this.sz * 0.6);
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(this.pts[0][0], this.pts[0][1]);
+    for (let i = 1; i < this.pts.length; i++) {
+      const prev = this.pts[i - 1];
+      const cur  = this.pts[i];
+      ctx.quadraticCurveTo(prev[0], prev[1], (prev[0] + cur[0]) / 2, (prev[1] + cur[1]) / 2);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
   ctx.restore();
 };
 
 function initAsh() {
   ash = [];
-  for (let i = 0; i < 420; i++) ash.push(new Ash());
+  for (let i = 0; i < 480; i++) ash.push(new Ash());
 }
 
 function loop() {
-  // ivory background every frame
   ctx.fillStyle = '#f0e8e0';
   ctx.fillRect(0, 0, W, H);
   ash.forEach(a => { a.step(); a.paint(); });
   requestAnimationFrame(loop);
 }
+
+// scroll tracking — ash lives in world space not viewport space
+window.addEventListener('scroll', () => {
+  const delta = window.scrollY - lastScrollY;
+  ash.forEach(a => {
+    a.y -= delta;
+    if (a.y < -60) { a.reset(false); a.y = -Math.random() * 40; }
+    if (a.y > H + 60) { a.reset(false); a.y = H + Math.random() * 30; }
+  });
+  lastScrollY = window.scrollY;
+}, { passive: true });
 
 resize(); initAsh(); loop();
 window.addEventListener('resize', () => { resize(); initAsh(); });
