@@ -7,6 +7,11 @@
 <meta name="description" content="you found this for a reason.">
 <meta property="og:title" content="-prophet-">
 <meta property="og:description" content="you found this for a reason.">
+<meta property="og:url" content="https://prophetart.xyz">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:site" content="@ProphetART92">
+<meta name="twitter:title" content="-prophet-">
+<meta name="twitter:description" content="you found this for a reason.">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
 
@@ -379,6 +384,48 @@
     user-select: none;
   }
 
+  .hero-links {
+    display: flex;
+    gap: 24px;
+    margin-top: 20px;
+    align-items: center;
+  }
+
+  .mint-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.5em;
+    color: var(--muted);
+    text-decoration: none;
+    text-transform: lowercase;
+    border: 0.5px solid #1a1a1a;
+    padding: 10px 20px;
+    transition: color 0.3s, border-color 0.3s, letter-spacing 0.3s;
+    cursor: pointer;
+    background: transparent;
+  }
+
+  .mint-btn:hover {
+    color: var(--text);
+    border-color: #3a3a3a;
+    letter-spacing: 0.8em;
+  }
+
+  .x-link {
+    font-size: 8px;
+    letter-spacing: 0.5em;
+    color: #1e1e1e;
+    text-decoration: none;
+    text-transform: lowercase;
+    transition: color 0.3s, letter-spacing 0.3s;
+    cursor: pointer;
+  }
+
+  .x-link:hover {
+    color: #555;
+    letter-spacing: 0.8em;
+  }
+
   /* RESPONSIVE */
   @media (max-width: 768px) {
     nav { padding: 20px 24px; }
@@ -436,6 +483,10 @@
     </div>
   </div>
   <div class="tagline" id="tagline">you found this for a reason.</div>
+  <div class="hero-links">
+    <a class="mint-btn" href="https://www.transient.xyz/mint/-prophet-origins" target="_blank" rel="noopener">collect origins →</a>
+    <a class="x-link" href="https://x.com/ProphetART92" target="_blank" rel="noopener">@prophetart92</a>
+  </div>
 </section>
 
 <div class="col-header">
@@ -600,10 +651,10 @@ for (let n = 1; n <= 13; n++) {
   });
 
   piece.addEventListener('click', () => {
-    const isActive = piece.classList.toggle('active');
+    window.open('https://www.transient.xyz/mint/-prophet-origins', '_blank');
     const cta = piece.querySelector('.piece-cta');
     const lbl = piece.querySelector('.piece-label');
-    scramble(cta, isActive ? 'selected' : ctaLines[Math.floor(Math.random() * ctaLines.length)], 300);
+    scramble(cta, ctaLines[Math.floor(Math.random() * ctaLines.length)], 300);
     scramble(lbl, 'origins', 200);
   });
 
