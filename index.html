@@ -594,10 +594,26 @@ footer{
   text-transform:lowercase;
 }
 
-/* REDACTION spans */
+/* REDACTION spans — starts as solid marker bar, reveals on hover */
 .rc{
   display:inline;
-  transition:color 0.06s;
+  background:#1c0606;
+  color:transparent !important;
+  /* box-shadow fills the letter-spacing gaps to create one continuous bar */
+  box-shadow:6px 0 0 5px #1c0606, -6px 0 0 5px #1c0606;
+  border-radius:1px;
+  position:relative;
+  transition:background 0.08s, color 0.08s, box-shadow 0.08s;
+  cursor:default;
+}
+.rc.shown{
+  background:transparent;
+  color:inherit !important;
+  box-shadow:none;
+}
+/* larger spacing for the ORIGINS title */
+.col-title .rc{
+  box-shadow:9px 0 0 8px #1c0606, -9px 0 0 8px #1c0606;
 }
 
 /* RESPONSIVE */
@@ -642,6 +658,11 @@ footer{
       <li><a class="nav-sym" id="garden-btn" href="#">❧<span class="sym-tip">garden</span></a></li>
       <li><a class="nav-mint" href="https://www.transient.xyz/mint/-prophet-origins" target="_blank" rel="noopener">collect →</a></li>
       <li><a class="nav-x" href="https://x.com/ProphetART92" target="_blank" rel="noopener">𝕏</a></li>
+      <li><a class="nav-x nav-os" href="https://opensea.io/collection/-origins-" target="_blank" rel="noopener" title="opensea">
+        <svg width="14" height="14" viewBox="0 0 90 90" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M45 0C20.151 0 0 20.151 0 45C0 69.849 20.151 90 45 90C69.849 90 90 69.849 90 45C90 20.151 69.849 0 45 0ZM22.203 46.512L22.394 46.203L33.795 27.478C33.967 27.2 34.362 27.225 34.496 27.527C36.338 31.697 37.932 36.868 37.184 40.138C36.861 41.524 35.964 43.405 34.949 45.104C34.822 45.337 34.682 45.565 34.533 45.782C34.461 45.888 34.343 45.948 34.217 45.948H22.538C22.207 45.948 22.015 45.588 22.203 46.512Z"/>
+        </svg>
+      </a></li>
     </ul>
   </nav>
 
@@ -886,33 +907,29 @@ fL.addEventListener('click', () => {
   scramble(fL, fLines[fIdx], 350);
 });
 
-// REDACTION — for logo and ORIGINS title
+// REDACTION — starts hidden, reveals on hover, re-redacts on leave
 function setupRedaction(el, text) {
-  // wrap each character in a span
   el.innerHTML = text.split('').map(c =>
     `<span class="rc" data-c="${c}">${c}</span>`
   ).join('');
+  // starts fully redacted (no .shown class by default)
 
   let timers = [];
   function clearT() { timers.forEach(clearTimeout); timers = []; }
 
+  // hover: reveal (unredact) left to right
   el.addEventListener('mouseenter', () => {
     clearT();
     el.querySelectorAll('.rc').forEach((s, i) => {
-      timers.push(setTimeout(() => {
-        s.style.color = '#8b0000';
-        s.textContent = '█';
-      }, i * 48));
+      timers.push(setTimeout(() => s.classList.add('shown'), i * 48));
     });
   });
 
+  // leave: re-redact right to left (bar sweeps back over)
   el.addEventListener('mouseleave', () => {
     clearT();
     [...el.querySelectorAll('.rc')].reverse().forEach((s, i) => {
-      timers.push(setTimeout(() => {
-        s.style.color = '';
-        s.textContent = s.dataset.c;
-      }, i * 42));
+      timers.push(setTimeout(() => s.classList.remove('shown'), i * 42));
     });
   });
 }
